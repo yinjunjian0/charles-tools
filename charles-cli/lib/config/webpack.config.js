@@ -2,130 +2,154 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const webpack = require('webpack');
-const OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const WebpackBar = require('webpackbar');
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+const AntdDayjsWebpackPlugin = require('antd-dayjs-webpack-plugin');
 
+module.exports = ({ staticDir, port }) => {
+  return {
+    mode: 'production',
+    entry: { app: './src/index.js', vendor: ['react', 'react-dom'] },
 
-module.exports = {
-  externals: {
-    "react": "React",
-    "react-dom": "ReactDOM"
-  },
-  mode: 'production',
-  entry: './src/index.js',
-  output: {
-    filename: 'js/[name].[hash].js',
-    path: path.resolve(__dirname, 'dist'),
-    crossOriginLoading: 'anonymous',
-    chunkFilename: 'js/[name]-[chunkhash].js',
-  },
-  optimization: {
-    splitChunks: {
-      // chunks: "async", //将什么类型的代码块用于分割，三选一： "initial"：入口代码块 | "all"：全部 | "async"：按需加载的代码块
-      minSize: 0, //大小超过30kb的模块才会被提取
-      name: true, //每个缓存组打包得到的代码块的名称
-      cacheGroups: {
-        commons: {
-          chunks: "initial",
-          minChunks: 2,
-          maxInitialRequests: 3, // 默认为3
-        },
-        vendors: {
-          test: /[\\/]node_modules[\\/]/,
-          chunks: "initial",
-          name: "vendor",
-        },
+    output: {
+      filename: 'js/[name].[hash].js',
+      path: staticDir || path.resolve(__dirname, 'dist'),
+      crossOriginLoading: 'anonymous',
+      chunkFilename: 'js/[name]-[chunkhash].js',
+    },
+
+    devtool: false,
+
+    resolve: {
+      extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
+      alias: {
+        '@': path.resolve(staticDir, '../src'),
       },
     },
-  },
-  plugins: [
-    new WebpackBar(),
-    new HtmlWebpackPlugin({
-      title: 'test HTMLWebpackPlugin',
-      template: "./public/index.html"
-    }),
-    new CleanWebpackPlugin(),
-    new webpack.NamedModulesPlugin(),
-    new webpack.HotModuleReplacementPlugin(),
-    new OptimizeCssAssetsPlugin({
-      assetNameRegExp: /\.optimize\.css$/g,
-      cssProcessor: require('cssnano'),
-      cssProcessorPluginOptions: {
-        preset: ['default', { discardComments: { removeAll: true } }],
-      },
-      canPrint: true
-    })
-  ],
-  module: {
-    rules: [
-      {
-        test: /\.tsx?$/,
-        use: 'ts-loader',
-        exclude: /node_modules/,
-      },
-      {
-        test: /\.(js|ts)x?$/,
-        use: [
-          {
-            loader: require.resolve('babel-loader'),
-            options: {
-              plugins: [
-                [
-                  require.resolve('babel-plugin-import'),
-                  {
-                    libraryName: 'antd',
-                    style: true
-                  },
-                ]
-              ]
-            }
+
+    performance: {
+      hints: false,
+      maxEntrypointSize: 512000,
+      maxAssetSize: 512000
+    },
+
+    optimization: {
+      splitChunks: {
+        chunks: 'all',  // initial(初始块)、async(按需加载块)、all(全部块)，默认为async
+        name: true,
+        cacheGroups: {
+          vendor: {
+            name: "vendor",
+            chunks: "initial"
           }
-        ]
+        }
       },
-      {
-        test: /\.js$/,
-        use: [{
-          loader: require.resolve('babel-loader'),
-          options: {
-            presets: [require.resolve('@babel/preset-react')],
-            cacheDirectory: true,
-          }
-        }],
-        exclude: /node_modules/
-      },
-      {
-        test: /\.css/,
-        use: [require.resolve('style-loader'), require.resolve('css-loader')]
-      },
-      {
-        test: /\.less/,
-        use: [{
-          loader: require.resolve('style-loader'),
-        },
+    },
+
+    plugins: [
+      new AntdDayjsWebpackPlugin(), // 替换moment
+      new BundleAnalyzerPlugin({ // 查看打包性能 
+        analyzerMode: 'server',
+        analyzerHost: '127.0.0.1',
+        analyzerPort: 8888,
+        reportFilename: 'report.html',
+        defaultSizes: 'parsed',
+        openAnalyzer: true,
+        generateStatsFile: false,
+        statsFilename: 'stats.json',
+        logLevel: 'info'
+      }),
+      new WebpackBar(),
+      new HtmlWebpackPlugin({
+        title: 'test HTMLWebpackPlugin',
+        template: require.resolve("../public/index.html")
+      }),
+      new CleanWebpackPlugin(),
+      new webpack.NamedModulesPlugin(),
+      // new OptimizeCssAssetsPlugin({
+      //   assetNameRegExp: /\.optimize\.css$/g,
+      //   cssProcessor: require('cssnano'),
+      //   cssProcessorPluginOptions: {
+      //     preset: ['default', { discardComments: { removeAll: true } }],
+      //   },
+      //   canPrint: true
+      // })
+    ],
+
+    module: {
+      rules: [
         {
-          loader: require.resolve('css-loader'),
-        },
-        {
-          loader: require.resolve('less-loader'),
-          options: {
-            lessOptions: {
-              javascriptEnabled: true,
+          test: /\.tsx?$/,
+          exclude: /node_modules/,
+          use: [
+            {
+              loader: require.resolve('ts-loader'),
             },
-          },
-        }]
-      },
-      {
-        test: /\.(png|svg|jpg|gif)$/,
-        use: [
-          {
-            loader: require.resolve('url-loader'),
-            options: {
-              limit: 1,
-              outputPath: 'img/'
+            {
+              loader: require.resolve('babel-loader'),
+              options: {
+                cacheDirectory: true,
+                presets: [require.resolve('@babel/preset-react'), require.resolve("@babel/preset-typescript")],
+                plugins: []
+              }
+            },
+          ],
+        },
+        {
+          test: /\.(js)x?$/,
+          use: [
+            {
+              loader: require.resolve('babel-loader'),
+              options: {
+                presets: [require.resolve('@babel/preset-react')],
+                plugins: [
+                  [
+                    require.resolve('babel-plugin-import'),
+                    {
+                      libraryName: 'antd',
+                      style: true
+                    },
+                  ]
+                ]
+              }
             }
-          }
-        ]
-      }
-    ]
+          ],
+          exclude: /node_modules/
+        },
+        {
+          test: /\.css/,
+          use: [require.resolve('style-loader'), require.resolve('css-loader')]
+        },
+        {
+          test: /\.less/,
+          use: [{
+            loader: require.resolve('style-loader'),
+          },
+          {
+            loader: require.resolve('css-loader'),
+          },
+          {
+            loader: require.resolve('less-loader'),
+            options: {
+              lessOptions: {
+                javascriptEnabled: true,
+              },
+            },
+          }]
+        },
+        {
+          test: /\.(png|svg|jpg|gif)$/,
+          use: [
+            {
+              loader: require.resolve('file-loader'),
+              options: {
+                limit: 1,
+                outputPath: 'img/'
+              }
+            }
+          ]
+        }
+      ]
+    }
   }
-};
+}

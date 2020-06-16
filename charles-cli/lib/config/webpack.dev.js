@@ -6,11 +6,12 @@ const OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const FriendlyErrorsWebpackPlugin = require('friendly-errors-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const AntdDayjsWebpackPlugin = require('antd-dayjs-webpack-plugin');
 
 const distPath = path.resolve(__dirname, 'dist')
 
 
-module.exports = ({ staticDir, port }) => {
+module.exports = ({ staticDir, port, app = 'unknown' }) => {
   return {
     mode: 'development',
     entry: ['react-hot-loader/patch', './src'],
@@ -26,11 +27,12 @@ module.exports = ({ staticDir, port }) => {
       extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
       alias: {
         'react-dom': '@hot-loader/react-dom',
-        '@': path.resolve(staticDir, '../src'),
+        '@': path.resolve(staticDir, '../src')
       },
     },
 
     plugins: [
+      new AntdDayjsWebpackPlugin({ initFilePath: path.resolve(staticDir, '../') }), // 替换moment
       new FriendlyErrorsWebpackPlugin({
         compilationSuccessInfo: {
           messages: [`开发地址: http://localhost:${port}`, `开发完成请使用：charles deploy`],
@@ -40,10 +42,10 @@ module.exports = ({ staticDir, port }) => {
       }),
       new WebpackBar(),
       new HtmlWebpackPlugin({
-        title: 'test',
+        title: `${app}(local)`,
         template: require.resolve("../public/index.html")
       }),
-      new CleanWebpackPlugin(),
+      // new CleanWebpackPlugin(),
       new webpack.NamedModulesPlugin(),
       new webpack.HotModuleReplacementPlugin(),
     ],
