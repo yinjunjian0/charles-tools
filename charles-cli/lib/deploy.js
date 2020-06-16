@@ -1,5 +1,6 @@
 const Client = require("ssh2-sftp-client");
 const webpackBuild = require('./build')
+const { dbConfig } = require('./config/config')
 
 const sftp = new Client();
 const fs = require("fs");
@@ -7,10 +8,7 @@ const path = require('path')
 
 
 const config = {
-  host: "39.106.122.4",
-  user: "root",
-  password: "aB287712",
-  port: "22",
+
 };
 
 module.exports = async function ({ staticDir, app }) {
@@ -24,7 +22,7 @@ module.exports = async function ({ staticDir, app }) {
   console.log('--------开始部署---------');
 
   sftp
-    .connect(config)
+    .connect(dbConfig)
     .then(() => {
       return sftp.uploadDir(staticDir, remoteFile);
     })
