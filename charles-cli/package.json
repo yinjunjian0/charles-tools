@@ -44,7 +44,7 @@
     "babel-plugin-import": "^1.13.0",
     "express": "^4.17.1",
     "friendly-errors-webpack-plugin": "^1.7.0",
-    "node-notifier": "^7.0.1",
+    "node-notifier": "^8.0.1",
     "react-hot-loader": "^4.12.21",
     "ts-loader": "^7.0.5",
     "typescript": "^3.9.5",
